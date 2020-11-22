@@ -6,7 +6,6 @@ import logging
 import requests
 from requests.exceptions import HTTPError
 
-
 _HTTP_STANDARD_HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
     "accept-encoding": "gzip, deflate, br",
@@ -23,6 +22,7 @@ _OPGG_TEMPLATES = {
     # rank overview in league
     "league": "https://{}.op.gg/summoner/league/userName={}&",
 }
+
 _VALID_LEAGUE_SERVERS = [
     "euw",
     "eune",
@@ -129,14 +129,21 @@ def get_live_game_champ_played(league_name: str, server_name: str) -> Optional[s
     Returns:
         Optional[str]: the champion's name, if summoner is ingame; None, if not ingame
     """
+    # get top-level logger
+    logger = logging.getLogger("lol_watchbot")
+
     # construct url for the live game
     url = construct_url_by_name_and_server(
         league_name=league_name, server_name=server_name, mode="live_game"
     )
+    logger.info(f"Retrieving live game for {league_name}...")
 
     # send the HTTP request
     r = requests.get(url=url, headers=_HTTP_STANDARD_HEADERS)
-    r.raise_for_status()
+    try:
+        r.raise_for_status()
+    except HTTPError as e:
+        logger.error(f"Encountered error getting live game for {league_name}: {e}")
 
     # scrape champ played for given league_name
     soup = BeautifulSoup(r.content, features="html.parser")
@@ -159,7 +166,9 @@ def get_live_game_champ_played(league_name: str, server_name: str) -> Optional[s
             if summoner_name.lower() == league_name.lower():
                 # found the summoner! > extract champion
                 champ_cell = table_row.find("td", {"class": "ChampionImage Cell"})
-                return champ_cell.find("a")["title"]
+                champ_name = champ_cell.find("a")["title"]
+                logger.info(f"\tFound champion: {champ_name}!")
+                return champ_name
 
 
 if __name__ == "__main__":

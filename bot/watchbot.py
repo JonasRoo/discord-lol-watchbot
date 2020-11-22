@@ -27,8 +27,10 @@ class WatchBot(commands.Bot):
 
         # local import so that the cogs can import the bot (e.g. for logging)
         from bot.cogs.test_cog import TestCog
+        from bot.cogs.lolacc_cog import LolAccCog
 
         self.add_cog(TestCog(bot=self))
+        self.add_cog(LolAccCog(bot=self))
 
         self.add_listener(func=self.command_logging, name="on_command")
 
@@ -50,4 +52,12 @@ class WatchBot(commands.Bot):
         """
         if isinstance(error, commands.CommandNotFound):
             await ctx.send(f"Command `{ctx.invoked_with}` was not found!!")
+        # can't use "CommandInvokeError" since this is thrown EVERY TIME there's a command invoking error!
+        elif isinstance(error, commands.CommandInvokeError):
+            await ctx.send(f"Error invoking `{ctx.invoked_with}.`")
+        elif isinstance(error, commands.CheckFailure):
+            await ctx.send(
+                f"Did not pass (permissions) checks while calling `{ctx.invoked_with}.\nError message:\n{error}`"
+            )
+
         self.logger.error(error)

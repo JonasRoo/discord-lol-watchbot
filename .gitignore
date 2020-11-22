@@ -136,3 +136,6 @@ html/
 
 # VSCode stuff
 .vscode/
+
+# local admin secrets
+admin_secrets.py
