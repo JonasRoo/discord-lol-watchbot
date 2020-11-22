@@ -1,0 +1,1 @@
+from database_interface.session.session_handler import bot_declarative_base
