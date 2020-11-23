@@ -2,6 +2,8 @@ import os
 import logging
 import discord
 from discord.ext import commands
+from bot.database_interface import bot_declarative_base
+from bot.common_utils.exceptions import OpGGParsingError, BadArgumentError
 
 COMMAND_PREFIX = "s10!"
 
@@ -43,7 +45,7 @@ class WatchBot(commands.Bot):
 
     async def command_logging(self, ctx: discord.ext.commands.Context):
         self.logger.info(
-            f"CMD\t{ctx.message.content} | {ctx.author.name} | {ctx.channel.name} | {ctx.guild.name}"
+            f"CMD-INVOKED\t{ctx.message.content} | {ctx.author.name} | {ctx.channel.name} | {ctx.guild.name}"
         )
 
     async def on_command_error(self, ctx, error):
@@ -56,8 +58,22 @@ class WatchBot(commands.Bot):
         elif isinstance(error, commands.CommandInvokeError):
             await ctx.send(f"Error invoking `{ctx.invoked_with}.`")
         elif isinstance(error, commands.CheckFailure):
+            # raised when an invoking user does not pass (permission) checks
             await ctx.send(
-                f"Did not pass (permissions) checks while calling `{ctx.invoked_with}.\nError message:\n{error}`"
+                f"Did not pass (permissions) checks while calling `{ctx.invoked_with}`.\n`Error message:\n{error}`"
             )
-
-        self.logger.error(error)
+        elif isinstance(error, OpGGParsingError):
+            await ctx.send(
+                f"Error interacting with the OP.GG endpoint while calling `{ctx.invoked_with}`.\n\nError message:\n`{error}`"
+            )
+        elif isinstance(error, BadArgumentError):
+            await ctx.send(
+                f"Error parsing one of your arguments for the command `{ctx.invoked_with}`.\n\nError message:\n`{error}`"
+            )
+        else:
+            # another exception that we're not handling > internal error
+            await ctx.send(f"Internal error while invoking `{ctx.invoked_with}`.")
+        # finally we log our error
+        # ONLY IN TESTING:
+        self.logger.critical(error, exc_info=True)
+        # self.logger.error(error)

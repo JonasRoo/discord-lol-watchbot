@@ -1,7 +1,9 @@
-from typing import Tuple, Optional
+from bot.common_utils.exceptions import OpGGParsingError
 
+from typing import Tuple, Optional
 from urllib.parse import quote_plus
 from bs4 import BeautifulSoup
+import re
 import logging
 import requests
 from requests.exceptions import HTTPError
@@ -16,7 +18,7 @@ _OPGG_TEMPLATES = {
     # (default) match history
     "history": "https://{}.op.gg/summoner/userName={}",
     # live game
-    "live_game": "https://{}.op.gg/summoner/spectator/userName={}&",
+    "spectator": "https://{}.op.gg/summoner/spectator/userName={}&",
     # overview of champions played in past seasons (& normal games)
     "champions": "https://{}.op.gg/summoner/champions/userName={}&",
     # rank overview in league
@@ -38,6 +40,31 @@ _VALID_LEAGUE_SERVERS = [
 ]
 
 
+def _validate_opgg_params(
+    server_name: Optional[str] = None,
+    mode: Optional[str] = None,
+    league_name: Optional[str] = None,
+):
+    """
+    Validates various input parameters for opgg constructors.
+
+    Args:
+        server_name (Optional[str], optional): an opgg server name. Defaults to None.
+        mode (Optional[str], optional): an opgg page mode. Defaults to None.
+        league_name (Optional[str], optional): a lol ingame name. Defaults to None.
+
+    Raises:
+        OpGGParsingError: if any of the input parameters are invalid
+    """
+    # various validation of input
+    if mode is not None and not mode in _OPGG_TEMPLATES:
+        raise OpGGParsingError(f"mode needs to be one of {_OPGG_TEMPLATES.keys()}!")
+    if server_name is not None and not server_name in _VALID_LEAGUE_SERVERS:
+        raise OpGGParsingError(f"server needs to be one of {_VALID_LEAGUE_SERVERS}!")
+    if league_name is None or not league_name:
+        raise OpGGParsingError("league ingame name can't be empty!")
+
+
 def construct_url_by_name_and_server(
     league_name: str, server_name: str, mode: Optional[str] = "history"
 ) -> str:
@@ -50,25 +77,47 @@ def construct_url_by_name_and_server(
         mode (str, optional): op.gg "mode", which part of the site to view. Defaults to "history".
 
     Raises:
-        AttributeError:
-            1. when league_name is empty
-            2. when server_name is invalid
-            3. mode is invalid
+        OPGGParsingError: when input parameters are invalid
 
     Returns:
         str: a valid ready-to-query op.gg page.
     """
-    if not mode in _OPGG_TEMPLATES:
-        raise AttributeError(f"mode needs to be one of {_OPGG_TEMPLATES.keys()}!")
-    if not server_name in _VALID_LEAGUE_SERVERS:
-        raise AttributeError(f"server needs to be one of {_VALID_LEAGUE_SERVERS}!")
-    if not league_name:
-        raise AttributeError("league ingame name can't be empty!")
+    # various validation of input
+    _validate_opgg_params(server_name, mode, league_name)
 
     return _OPGG_TEMPLATES[mode].format(
         server_name,
+        # ensures that non-ASCII characters in name are requested correctly
         quote_plus(league_name, encoding="UTF-8"),
     )
+
+
+def convert_opgg_url_to(mode: str, url: str) -> str:
+    """
+    Converts any variation of an opgg URL to any other,
+    leaving summonerName and server.
+
+    Args:
+        mode (str): the mode / opgg endpoint to swap to
+        url (str): the base URL to change
+
+    Returns:
+        str: opgg url with same league_name and server_name, but new desired mode
+
+    Raises:
+        AttributeError: when op.gg URL is malconstructed
+    """
+    _validate_opgg_params(mode=mode)
+
+    server_re = r"^https?://(.{1,4})\.op\.gg.*"
+    name_re = r".*userName=([^&]+)&?$"
+
+    server_name, league_name = (
+        re.search(server_re, url).group(1),
+        re.search(name_re, url).group(1),
+    )
+
+    return construct_url_by_name_and_server(league_name, server_name, mode)
 
 
 def _does_url_belong_to_valid_account(url: str) -> bool:
@@ -117,36 +166,16 @@ def verify_summoner_on_server(league_name: str, server_name: str) -> bool:
     return _does_url_belong_to_valid_account(url=url)
 
 
-def get_live_game_champ_played(league_name: str, server_name: str) -> Optional[str]:
+def _extract_champ_from_live_game_soup(soup: BeautifulSoup) -> Optional[str]:
     """
-    Finds the currently played champion IF a given summoner is ingame;
-    returns None, if he's not ingame
+    Extracts the live champ played by scraping the opgg livegame HTML.
 
     Args:
-        league_name (str): name of summoner to search for
-        server_name (str): (valid) server to look for
+        soup (BeautifulSoup): The soup of the opgg livegame endpoint response
 
     Returns:
-        Optional[str]: the champion's name, if summoner is ingame; None, if not ingame
+        Optional[str]: None, if summoner not ingame; the champ name, if ingame.
     """
-    # get top-level logger
-    logger = logging.getLogger("lol_watchbot")
-
-    # construct url for the live game
-    url = construct_url_by_name_and_server(
-        league_name=league_name, server_name=server_name, mode="live_game"
-    )
-    logger.info(f"Retrieving live game for {league_name}...")
-
-    # send the HTTP request
-    r = requests.get(url=url, headers=_HTTP_STANDARD_HEADERS)
-    try:
-        r.raise_for_status()
-    except HTTPError as e:
-        logger.error(f"Encountered error getting live game for {league_name}: {e}")
-
-    # scrape champ played for given league_name
-    soup = BeautifulSoup(r.content, features="html.parser")
     # if this div exists, the summoner is not currently in a live game
     if soup.find("div", {"class": "SpectatorError"}) is not None:
         return None
@@ -171,19 +200,34 @@ def get_live_game_champ_played(league_name: str, server_name: str) -> Optional[s
                 return champ_name
 
 
-if __name__ == "__main__":
-    # test url construction
-    url = construct_url_by_name_and_server(league_name="ζξζ ι ζξζ", server_name="euw")
-    print(url)
+def get_live_game_champ_played(league_name: str, server_name: str) -> Optional[str]:
+    """
+    Finds the currently played champion IF a given summoner is ingame;
+    returns None, if he's not ingame
 
-    # test summoner verification
-    is_summoner_valid = verify_summoner_on_server(
-        league_name="ζξζ ι ζξζ", server_name="euw"
-    )
-    print(is_summoner_valid)
+    Args:
+        league_name (str): name of summoner to search for
+        server_name (str): (valid) server to look for
 
-    # test getting active game of inactive account
-    champ_played = get_live_game_champ_played(
-        league_name="ζξζ ι ζξζ", server_name="euw"
+    Returns:
+        Optional[str]: the champion's name, if summoner is ingame; None, if not ingame
+    """
+    # get top-level logger
+    logger = logging.getLogger("lol_watchbot")
+
+    # construct url for the live game
+    url = construct_url_by_name_and_server(
+        league_name=league_name, server_name=server_name, mode="spectator"
     )
-    print(champ_played)
+    logger.info(f"Retrieving live game for {league_name}...")
+
+    # send the HTTP request
+    r = requests.get(url=url, headers=_HTTP_STANDARD_HEADERS)
+    try:
+        r.raise_for_status()
+    except HTTPError as e:
+        logger.error(f"Encountered error getting live game for {league_name}: {e}")
+
+    # scrape champ played for given league_name
+    soup = BeautifulSoup(r.content, features="html.parser")
+    return _extract_champ_from_live_game_soup(soup)
