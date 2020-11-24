@@ -1,7 +1,24 @@
 from bot.database_interface import bot_declarative_base
-from typing import Tuple, List, Dict, Any
+from typing import Tuple, List, Dict, Any, Optional
 import discord
 from discord.ext import commands
+
+_WARNING_ICON_URL = (
+    r"https://cdn.iconscout.com/icon/free/png-256/warning-notice-sign-symbol-38020.png"
+)
+
+
+def make_error_message_embed(
+    error_message: str, details: Optional[str] = None
+) -> discord.Embed:
+    embed = discord.Embed(name="⚠️ Error encountered ⚠️", colour=discord.Colour.red())
+    embed.set_thumbnail(url=_WARNING_ICON_URL)
+    embed.add_field(name="Error message", value=error_message, inline=False)
+    if details is not None:
+        embed.add_field(name="\u200b", value="\u200b", inline=False)  # spacing
+        embed.add_field(name="Details", value=details, inline=False)
+
+    return embed
 
 
 def make_account_add_confirmation_embed(

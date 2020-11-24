@@ -48,7 +48,7 @@ def _validate_opgg_params(
     if mode is not None and not mode in _OPGG_TEMPLATES:
         raise OpGGParsingError(f"mode needs to be one of {_OPGG_TEMPLATES.keys()}!")
     if server_name is not None and not server_name in Server.list():
-        raise OpGGParsingError(f"server needs to be one of {Server.list()}!")
+        raise OpGGParsingError(f"server needs to be one of `{Server.list()}`!")
     if league_name is None or not league_name:
         raise OpGGParsingError("league ingame name can't be empty!")
 

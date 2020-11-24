@@ -76,7 +76,11 @@ class LolAccCog(commands.Cog, name="LolAcc"):
         opgg_url = opgg_handler.construct_url_by_name_and_server(
             league_name=league_name.lower(), server_name=server_name.lower()
         )
-
+        if not opgg_handler._does_url_belong_to_valid_account(url=opgg_url):
+            await ctx.message.delete()
+            raise OpGGParsingError(
+                f"No valid account exists for {league_name} ({server_name})!"
+            )
         # make an embed for the confirmation message
         # (showing all params and the generated opgg URL)
         embed = embed_builder.make_account_add_confirmation_embed(

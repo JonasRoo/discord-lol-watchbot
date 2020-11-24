@@ -3,6 +3,7 @@ import logging
 import discord
 from discord.ext import commands
 from bot.database_interface import bot_declarative_base
+from bot.common_utils.embed_builder import make_error_message_embed
 from bot.common_utils.exceptions import OpGGParsingError, BadArgumentError
 
 COMMAND_PREFIX = "s10!"
@@ -53,27 +54,36 @@ class WatchBot(commands.Bot):
         Custom error handler to relay inforation back to user and log.
         """
         if isinstance(error, commands.CommandNotFound):
-            await ctx.send(f"Command `{ctx.invoked_with}` was not found!!")
-        # can't use "CommandInvokeError" since this is thrown EVERY TIME there's a command invoking error!
+            embed = make_error_message_embed(
+                error_message=f"Command `{ctx.invoked_with}` was not found!"
+            )
         elif isinstance(error, commands.CommandInvokeError):
-            await ctx.send(f"Error invoking `{ctx.invoked_with}.`")
+            embed = make_error_message_embed(
+                error_message=f"Error invoking `{ctx.invoked_with}.`"
+            )
         elif isinstance(error, commands.CheckFailure):
             # raised when an invoking user does not pass (permission) checks
-            await ctx.send(
-                f"Did not pass (permissions) checks while calling `{ctx.invoked_with}`.\n`Error message:\n{error}`"
+            embed = make_error_message_embed(
+                error_message=f"Did not pass (permissions) checks while calling `{ctx.invoked_with}`.",
+                details=error.__str__(),
             )
         elif isinstance(error, OpGGParsingError):
-            await ctx.send(
-                f"Error interacting with the OP.GG endpoint while calling `{ctx.invoked_with}`.\n\nError message:\n`{error}`"
+            embed = make_error_message_embed(
+                error_message=f"Error interacting with the OP.GG endpoint while calling `{ctx.invoked_with}`.",
+                details=error.__str__(),
             )
         elif isinstance(error, BadArgumentError):
-            await ctx.send(
-                f"Error parsing one of your arguments for the command `{ctx.invoked_with}`.\n\nError message:\n`{error}`"
+            embed = make_error_message_embed(
+                error_message=f"Error parsing one of your arguments for the command `{ctx.invoked_with}`.",
+                details=error.__str__(),
             )
+
         else:
             # another exception that we're not handling > internal error
-            await ctx.send(f"Internal error while invoking `{ctx.invoked_with}`.")
-        # finally we log our error
-        # ONLY IN TESTING:
-        self.logger.critical(error, exc_info=True)
-        # self.logger.error(error)
+            embed = make_error_message_embed(
+                error_message=f"Internal error while invoking `{ctx.invoked_with}`. Please contact the administrators!"
+            )
+
+        # finally, we send the error embed and log our error
+        await ctx.send(embed=embed)
+        self.logger.error(error)

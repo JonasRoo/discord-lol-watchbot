@@ -24,15 +24,15 @@ class Server(enum.Enum):
     ru = "ru"
     tr = "tr"
 
-    @staticmethod
-    def list() -> List[str]:
+    @classmethod
+    def list(cls) -> List[str]:
         """
         Lists all possible Enum values of this class
 
         Returns:
             List[str]: A list of possible values
         """
-        return list(map(lambda s: s.value, Server))
+        return list(map(lambda s: s.value, cls))
 
 
 class User(bot_declarative_base):
