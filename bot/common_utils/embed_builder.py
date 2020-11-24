@@ -11,10 +11,22 @@ _WARNING_ICON_URL = (
 def make_error_message_embed(
     error_message: str, details: Optional[str] = None
 ) -> discord.Embed:
+    """
+    Constructs an embed for errors occuring during runtime of the bot.
+
+    Args:
+        error_message (str): The (general) error message that occured.
+        details (Optional[str], optional): Optional details message of the error. Defaults to None.
+
+    Returns:
+        discord.Embed: A populated error message embed.
+    """
     embed = discord.Embed(name="⚠️ Error encountered ⚠️", colour=discord.Colour.red())
     embed.set_thumbnail(url=_WARNING_ICON_URL)
+    # in any case, add our general error message to the embed
     embed.add_field(name="Error message", value=error_message, inline=False)
     if details is not None:
+        # if we have details available to us, add those as well
         embed.add_field(name="\u200b", value="\u200b", inline=False)  # spacing
         embed.add_field(name="Details", value=details, inline=False)
 
