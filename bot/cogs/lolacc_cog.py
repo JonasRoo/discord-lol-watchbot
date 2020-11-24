@@ -24,11 +24,6 @@ class LolAccCog(commands.Cog, name="LolAcc"):
         self.bot = bot
         self.confirmation_emojis = ("👍", "👎")
 
-    # @commands.command()
-    # async def test(self, ctx: discord.ext.commands.Context, member: discord.Member=None, lol_server: str, lol_name: str):
-    #     if member is None:
-    #         member = ctx.message.author
-
     # add your own account: s10!add_user Faker KR
     @commands.command(aliases=["add", "adduser"])
     async def add_user(
@@ -38,6 +33,21 @@ class LolAccCog(commands.Cog, name="LolAcc"):
         server_name: str,
         discord_member: Optional[discord.Member] = None,
     ):
+        """
+        Adds a new LoL account to the database, with confirmation dialogue.
+
+        Args:
+            ctx (discord.ext.commands.Context): Discord context
+            league_name (str): LoL ingame name
+            server_name (str): LoL server
+            discord_member (Optional[discord.Member], optional): Only usable by admins. If entered, adds the LoL account to that Discord user instead. Defaults to None.
+
+        Raises:
+            commands.CheckFailure: When invoking user tries to add LoL acc to another Discord user, and is not of the bot's admins.
+            asyncio.TimeoutError: When the confirmation message is declined, or times out.
+            Exceptions are handled within the function.
+
+        """
         # lower case server to comply with naming in Enum
         server_name = server_name.lower()
         if discord_member:
@@ -67,6 +77,8 @@ class LolAccCog(commands.Cog, name="LolAcc"):
             league_name=league_name.lower(), server_name=server_name.lower()
         )
 
+        # make an embed for the confirmation message
+        # (showing all params and the generated opgg URL)
         embed = embed_builder.make_account_add_confirmation_embed(
             league_name=league_name,
             server_name=server_name,
@@ -130,23 +142,49 @@ class LolAccCog(commands.Cog, name="LolAcc"):
     @commands.command(aliases=["list", "list_accs"])
     @decorators.is_bot_admin()
     async def list_accounts(self, ctx: commands.Context):
+        """
+        Lists all the accounts in the database.
+        Only usable by bot admins.
+
+        Args:
+            ctx (commands.Context): Discord context
+        """
+        # get all instances of the User model
         all_accounts = query_utils.get_all_instances_of_something(User)
-        list_embed = embed_builder.make_list_accounts_embed(accounts=all_accounts)
+        # ..and construct a nice looking embed
+        # listing all accounts, grouped by discord user
+        list_embed = embed_builder.make_list_accounts_embed(
+            accounts=all_accounts, ctx=ctx
+        )
         list_embed.set_footer(
             text=self.bot.user.name, icon_url=self.bot.user.avatar_url
         )
         await ctx.send(embed=list_embed)
 
-    @commands.command(aliases=["del", "delete_user"])
+    @commands.command(aliases=["del", "delete_user", "remove", "rm"])
     @decorators.is_bot_admin()
     async def delete(self, ctx: commands.Context, int_id: int):
+        """
+        Deletes a linked LoL account by its (internal) database ID.
+        Only usable by bot admins.
+
+        Args:
+            ctx (commands.Context): Discord context
+            int_id (int): The User instance's ID to be deleted
+
+        Raises:
+            BadArgumentError: When the `int_id` couldn't be found in the database
+        """
+        # first check whether a User instance with that ID exists
         query_options = {"id": int_id}
         if not query_utils._check_if_something_exists(
             model=User, options=query_options
         ):
+            # doesn't exist > notify user
             raise BadArgumentError(f"Account of ID `{int_id}` does not exist!")
+
+        # get string-version of deleted model instance, and notify user
         msg = query_utils.delete_first_instance_by_filter(
             model=User, options=query_options
         )
-
         await ctx.send(f"Successfully deleted user:\n{msg}")
