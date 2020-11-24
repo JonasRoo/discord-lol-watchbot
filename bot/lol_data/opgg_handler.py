@@ -1,4 +1,5 @@
 from bot.common_utils.exceptions import OpGGParsingError
+from bot.database_interface.tables.users import Server
 
 from typing import Tuple, Optional
 from urllib.parse import quote_plus
@@ -8,6 +9,7 @@ import logging
 import requests
 from requests.exceptions import HTTPError
 
+# standard headers for a "regular" user
 _HTTP_STANDARD_HEADERS = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
     "accept-encoding": "gzip, deflate, br",
@@ -24,20 +26,6 @@ _OPGG_TEMPLATES = {
     # rank overview in league
     "league": "https://{}.op.gg/summoner/league/userName={}&",
 }
-
-_VALID_LEAGUE_SERVERS = [
-    "euw",
-    "eune",
-    "lan",
-    "las",
-    "oce",
-    "kr",
-    "ru",
-    "jp",
-    "br",
-    "tr",
-    "na",
-]
 
 
 def _validate_opgg_params(
@@ -59,8 +47,8 @@ def _validate_opgg_params(
     # various validation of input
     if mode is not None and not mode in _OPGG_TEMPLATES:
         raise OpGGParsingError(f"mode needs to be one of {_OPGG_TEMPLATES.keys()}!")
-    if server_name is not None and not server_name in _VALID_LEAGUE_SERVERS:
-        raise OpGGParsingError(f"server needs to be one of {_VALID_LEAGUE_SERVERS}!")
+    if server_name is not None and not server_name in Server.list():
+        raise OpGGParsingError(f"server needs to be one of {Server.list()}!")
     if league_name is None or not league_name:
         raise OpGGParsingError("league ingame name can't be empty!")
 
