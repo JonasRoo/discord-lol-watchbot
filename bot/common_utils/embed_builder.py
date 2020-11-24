@@ -6,6 +6,10 @@ from discord.ext import commands
 _WARNING_ICON_URL = (
     r"https://cdn.iconscout.com/icon/free/png-256/warning-notice-sign-symbol-38020.png"
 )
+_SURVEILLANCE_ICON_URL = r"https://cdn.discordapp.com/attachments/779441923773431838/780599206645334056/bruh.png"
+_LIST_ICON_URL = (
+    r"https://everestalexander.files.wordpress.com/2015/11/moses10commandmentstrans.gif"
+)
 
 
 def make_error_message_embed(
@@ -21,7 +25,7 @@ def make_error_message_embed(
     Returns:
         discord.Embed: A populated error message embed.
     """
-    embed = discord.Embed(name="⚠️ Error encountered ⚠️", colour=discord.Colour.red())
+    embed = discord.Embed(title="⚠️ Error encountered ⚠️", colour=discord.Colour.red())
     embed.set_thumbnail(url=_WARNING_ICON_URL)
     # in any case, add our general error message to the embed
     embed.add_field(name="Error message", value=error_message, inline=False)
@@ -57,6 +61,7 @@ def make_account_add_confirmation_embed(
     embed = discord.Embed(
         title="🚨 New surveillance mission received 🚨", colour=discord.Colour.red()
     )
+    embed.set_thumbnail(url=_SURVEILLANCE_ICON_URL)
     # explanatory message to handling of dialog
     confirmation_message = f"Confirm by using {emojis[0]}, abort by using {emojis[1]}!"
 
@@ -117,6 +122,7 @@ def make_list_accounts_embed(
         discord.Embed: Populated embed listing all linked User accounts
     """
     embed = discord.Embed(title="📃✍ List of all accounts", colour=discord.Colour.red())
+    embed.set_thumbnail(url=_LIST_ICON_URL)
 
     # for each discord user and all their linked accounts, we add a new embed field
     for discord_id, acc_list in group_acc_dict_by_discord_user(accounts).items():
