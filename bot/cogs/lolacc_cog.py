@@ -14,7 +14,7 @@ except ImportError:
     _BOT_ADMINS = []
 
 import asyncio
-from typing import Optional
+from typing import Optional, List, Tuple
 import discord
 from discord.ext import commands
 
@@ -29,25 +29,25 @@ class LolAccCog(commands.Cog, name="LolAcc"):
     async def add_user(
         self,
         ctx: discord.ext.commands.Context,
-        league_name: str,
-        server_name: str,
         discord_member: Optional[discord.Member] = None,
+        server_name: str = "euw",
+        *league_name: str,
     ):
         """
         Adds a new LoL account to the database, with confirmation dialogue.
 
         Args:
             ctx (discord.ext.commands.Context): Discord context
-            league_name (str): LoL ingame name
-            server_name (str): LoL server
             discord_member (Optional[discord.Member], optional): Only usable by admins. If entered, adds the LoL account to that Discord user instead. Defaults to None.
-
-        Raises:
-            commands.CheckFailure: When invoking user tries to add LoL acc to another Discord user, and is not of the bot's admins.
-            asyncio.TimeoutError: When the confirmation message is declined, or times out.
-            Exceptions are handled within the function.
+            league_name (str): LoL ingame name
+            server_name (Optional[str]): LoL server. Defaults to "euw".
 
         """
+        # NOTE(jonas): if user has space in his league_name, that HAS to go in quotation marks
+
+        if isinstance(league_name, (tuple, list)):
+            # if a summoner with spaces in it is passed, this argument is a tuple.
+            league_name = " ".join(league_name)
         # lower case server to comply with naming in Enum
         server_name = server_name.lower()
         if discord_member:

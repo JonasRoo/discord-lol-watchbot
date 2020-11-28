@@ -31,9 +31,11 @@ class WatchBot(commands.Bot):
         # local import so that the cogs can import the bot (e.g. for logging)
         from bot.cogs.test_cog import TestCog
         from bot.cogs.lolacc_cog import LolAccCog
+        from bot.cogs.surveillance_cog import SurveillanceCog
 
         self.add_cog(TestCog(bot=self))
         self.add_cog(LolAccCog(bot=self))
+        self.add_cog(SurveillanceCog(bot=self))
 
         self.add_listener(func=self.command_logging, name="on_command")
 

@@ -154,25 +154,9 @@ def verify_summoner_on_server(league_name: str, server_name: str) -> bool:
     return _does_url_belong_to_valid_account(url=url)
 
 
-def _extract_champ_from_live_game_soup(soup: BeautifulSoup) -> Optional[str]:
-    """
-    Extracts the live champ played by scraping the opgg livegame HTML.
-
-    Args:
-        soup (BeautifulSoup): The soup of the opgg livegame endpoint response
-
-    Returns:
-        Optional[str]: None, if summoner not ingame; the champ name, if ingame.
-    """
-    # if this div exists, the summoner is not currently in a live game
-    if soup.find("div", {"class": "SpectatorError"}) is not None:
-        return None
-
-    # the summoner is in fact in a live game > scrape his champ!
-
-    # find both table bodies (1 for each team)
-    table_bodies = soup.findAll("tbody", {"class": "Body"})
-
+def get_table_row_of_summoner_from_table(
+    table_bodies: BeautifulSoup, league_name: str
+) -> BeautifulSoup:
     # for each table body (1 for each team)
     for table_body in table_bodies:
         # for each row within that body (5 per body)
@@ -182,13 +166,53 @@ def _extract_champ_from_live_game_soup(soup: BeautifulSoup) -> Optional[str]:
             summoner_name = summoner_cell.find("a").contents[0]
             if summoner_name.lower() == league_name.lower():
                 # found the summoner! > extract champion
-                champ_cell = table_row.find("td", {"class": "ChampionImage Cell"})
-                champ_name = champ_cell.find("a")["title"]
-                logger.info(f"\tFound champion: {champ_name}!")
-                return champ_name
+                return table_row
 
 
-def get_live_game_champ_played(league_name: str, server_name: str) -> Optional[str]:
+# TODO(jonas): extract: 1) game_mode 2) champ 3) summoner_one 4) summoner_two
+def _extract_data_from_live_game_soup(
+    soup: BeautifulSoup, league_name: str
+) -> Optional[str]:
+    """
+    Extracts the live champ played by scraping the opgg livegame HTML.
+
+    Args:
+        soup (BeautifulSoup): The soup of the opgg livegame endpoint response
+
+    Returns:
+        Optional[str]: None, if summoner not ingame; the champ name, if ingame.
+    """
+    logger = logging.getLogger("lol_watchbot")
+    # if this div exists, the summoner is not currently in a live game
+    if soup.find("div", {"class": "SpectatorError"}) is not None:
+        return None
+
+    # the summoner is in fact in a live game > scrape data!
+    data = {}
+    # GAME MODE (e.g. HA, SR etc.)
+    data["game_mode"] = soup.find("small", {"class": "MapName"}).contents[0]
+
+    # find both table bodies (1 for each team)
+    table_bodies = soup.findAll("tbody", {"class": "Body"})
+    summoner_table_row = get_table_row_of_summoner_from_table(table_bodies, league_name)
+
+    # SUMMONER SPELLS
+    spells = []
+    spell_container = summoner_table_row.find("td", {"class": "SummonerSpell Cell"})
+    spell_cells = spell_container.findAll("div", {"class": "Spell"})
+    for cell in spell_cells:
+        spells.append(cell["title"])
+    data["spells"] = spells
+
+    # CHAMP
+    champ_cell = summoner_table_row.find("td", {"class": "ChampionImage Cell"})
+    data["champion"] = champ_cell.find("a")["title"]
+    logger.info(f"\tFound data: {data}!")
+
+    return data
+
+
+def get_live_game_data_played(league_name: str, server_name: str) -> Optional[str]:
     """
     Finds the currently played champion IF a given summoner is ingame;
     returns None, if he's not ingame
@@ -218,4 +242,4 @@ def get_live_game_champ_played(league_name: str, server_name: str) -> Optional[s
 
     # scrape champ played for given league_name
     soup = BeautifulSoup(r.content, features="html.parser")
-    return _extract_champ_from_live_game_soup(soup)
+    return _extract_data_from_live_game_soup(soup, league_name)

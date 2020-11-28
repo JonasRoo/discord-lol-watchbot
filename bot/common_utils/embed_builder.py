@@ -129,7 +129,7 @@ def make_list_accounts_embed(
         # for each account in the list, construct a string like:
         # [internal_id] [ingame_name] ([server]) > [opgg_link]
         accounts_linked = [
-            f"`[{account['id']}]` {account['league_name']} ({account['server_name'].upper()}) 👉 [opgg]({account['opgg_link']})"
+            f"> `[{account['id']}]` {account['league_name']} ({account['server_name'].upper()}) 👉 [opgg]({account['opgg_link']})"
             for account in acc_list
         ]
         # get the discord user owning these accounts by ID

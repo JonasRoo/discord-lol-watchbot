@@ -1,9 +1,11 @@
 from bot.database_interface import bot_declarative_base
+from bot.database_interface.tables.matches import Match
 
 from typing import List
 import os
 import enum
 from sqlalchemy import Column, Integer, String, BigInteger, Enum, UniqueConstraint
+from sqlalchemy.orm import relationship
 
 
 class Server(enum.Enum):
@@ -47,6 +49,7 @@ class User(bot_declarative_base):
     league_name = Column(String)
     server_name = Column(Enum(Server))
     opgg_link = Column(String)
+    matches = relationship("Match", back_populates="user", cascade="all,delete")
 
     # account names on a server are unique
     __table_args__ = (
