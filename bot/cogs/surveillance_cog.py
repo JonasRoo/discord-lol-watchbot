@@ -3,9 +3,11 @@ from bot.database_interface.session.session_handler import session_scope
 from bot.database_interface.utils import query_utils
 from bot.database_interface.tables.users import User
 from bot.database_interface.tables.matches import Match
+from bot.common_utils.exceptions import MemberNotFoundError
 from bot.lol_data import opgg_handler
 
 from datetime import datetime
+import discord
 from discord.ext import commands, tasks
 
 _DEF_MINUTES_BETWEEN_MATCH_CALLS = 14.0
@@ -61,6 +63,10 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
 
     @fetch_matches.before_loop
     async def before_fetch_matches(self):
+        """
+        Wait for bot to join all guilds to prevent
+        catch perpetrator before joining.
+        """
         self.bot.logger.info(
             "TASK:\tWaiting for bot to be ready before fetching matches..."
         )
@@ -69,5 +75,18 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
     @commands.command(name="livetest")
     async def get_live_game_data(self, ctx):
         matches = query_utils.get_all_instances_of_something(model=Match)
-        msgs = [m for m in matches]
-        await ctx.send("\n".join(msgs))
+        await ctx.send("\n".join(matches))
+
+    @commands.command(name="testchannels")
+    async def test_channels(self, ctx: commands.Context):
+        channels = [c for c in ctx.guild.channels]
+        for channel in channels:
+
+            print(channel, "\t", channel.category, type(channel.category))
+        await ctx.send(ctx.guild)
+
+    async def push_punish_message(
+        embed: discord.Embed,
+        channel: discord.ChannelType,
+    ):
+        pass

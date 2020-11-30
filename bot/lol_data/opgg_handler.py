@@ -18,13 +18,13 @@ _HTTP_STANDARD_HEADERS = {
 
 _OPGG_TEMPLATES = {
     # (default) match history
-    "history": "https://{}.op.gg/summoner/userName={}",
+    "history": "https://{server}.op.gg/summoner/userName={ign}",
     # live game
-    "spectator": "https://{}.op.gg/summoner/spectator/userName={}&",
+    "spectator": "https://{server}.op.gg/summoner/spectator/userName={ign}&",
     # overview of champions played in past seasons (& normal games)
-    "champions": "https://{}.op.gg/summoner/champions/userName={}&",
+    "champions": "https://{server}.op.gg/summoner/champions/userName={ign}&",
     # rank overview in league
-    "league": "https://{}.op.gg/summoner/league/userName={}&",
+    "league": "https://{server}.op.gg/summoner/league/userName={ign}&",
 }
 
 
@@ -84,9 +84,9 @@ def construct_url_by_name_and_server(
     _validate_opgg_params(server_name, mode, league_name)
 
     return _OPGG_TEMPLATES[mode].format(
-        server_name,
+        server=server_name,
         # ensures that non-ASCII characters in name are requested correctly
-        quote_plus(league_name, encoding="UTF-8"),
+        ign=quote_plus(league_name, encoding="UTF-8"),
     )
 
 

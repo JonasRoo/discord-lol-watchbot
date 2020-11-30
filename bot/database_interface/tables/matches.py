@@ -1,7 +1,7 @@
 from bot.database_interface import bot_declarative_base
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
 
@@ -17,6 +17,7 @@ class Match(bot_declarative_base):
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="matches")
     map = Column(String)
+    is_abuse = Column(Boolean)
     champion = Column(String)
     summoner_one = Column(String)
     summoner_two = Column(String)

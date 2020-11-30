@@ -1,4 +1,5 @@
 from bot.database_interface import bot_declarative_base
+from bot.database_interface.tables.matches import Match
 from typing import Tuple, List, Dict, Any, Optional
 import discord
 from discord.ext import commands
@@ -10,6 +11,7 @@ _SURVEILLANCE_ICON_URL = r"https://cdn.discordapp.com/attachments/77944192377343
 _LIST_ICON_URL = (
     r"https://everestalexander.files.wordpress.com/2015/11/moses10commandmentstrans.gif"
 )
+_POLICE_MAN_ICON_URL = r"https://purepng.com/public/uploads/large/purepng.com-policemanpolicemanhuman-securitysafetypolicecop-142152696325297fsg.png"
 
 
 def make_error_message_embed(
@@ -141,3 +143,24 @@ def make_list_accounts_embed(
         )
 
     return embed
+
+
+def make_announcement_embed(
+    match: Match, url: str, user_id: int, ctx: commands.Context
+):
+    # check if we can grab a member of the match's discord_id in that location
+    member = channel.guild.get_member(user_id)
+    if member is None:
+        raise MemberNotFoundError(
+            f"A member of ID {match.user_id} could not be found on this server!"
+        )
+
+    embed = discord.Embed(title="🚨 S10 ABUSE DETECTED 🚨", colour=discord.Colour.red())
+    embed.set_thumbnail(url=_POLICE_MAN_ICON_URL)
+
+    # TODO(jonas): make the bot join the VC, then play a siren sound
+    return (
+        embed.add_field(name="FELLON", value=member.mention, inline=False)
+        .add_field(name="S10 ABUSE CHAMPION", value=match.champion, inline=False)
+        .add_field(name="LINK", value=url, inline=False)
+    )
