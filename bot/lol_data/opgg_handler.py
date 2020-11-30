@@ -1,7 +1,7 @@
 from bot.common_utils.exceptions import OpGGParsingError
 from bot.database_interface.tables.users import Server
 
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, Iterable
 from urllib.parse import quote_plus
 from bs4 import BeautifulSoup
 import re
@@ -26,6 +26,16 @@ _OPGG_TEMPLATES = {
     # rank overview in league
     "league": "https://{}.op.gg/summoner/league/userName={}&",
 }
+
+
+def _get_internal_logger() -> logging.Logger:
+    """
+    Fetches the watchbot's internal logger.
+
+    Returns:
+        logging.Logger: Logger
+    """
+    return logging.getLogger("lol_watchbot")
 
 
 def _validate_opgg_params(
@@ -119,7 +129,7 @@ def _does_url_belong_to_valid_account(url: str) -> bool:
         bool: True, if the request yielded a valid op.gg; False, if not.
     """
     # get the default logger of the bot
-    logger = logging.getLogger("lol_watchbot")
+    logger = _get_internal_logger()
     try:
         # request the URL
         r = requests.get(url=url, headers=_HTTP_STANDARD_HEADERS)
@@ -155,8 +165,27 @@ def verify_summoner_on_server(league_name: str, server_name: str) -> bool:
 
 
 def get_table_row_of_summoner_from_table(
-    table_bodies: BeautifulSoup, league_name: str
+    table_bodies: Iterable[BeautifulSoup], league_name: str
 ) -> BeautifulSoup:
+    """
+    Iterates over the live-game table, and returns the row of the `league_name`.
+    Structure of the `table_bodies` looks like:
+    <tbody (team A)>
+        <tr (one per summoner / header)>
+            <`n times` td (one per data point)>
+    <tbody (team B)>
+        <[same as for team B]>
+
+    Args:
+        table_bodies (Iterable[BeautifulSoup]): A list of table-bodies (this will be 2 bodies, one per each team)
+        league_name (str): The league name to return the table_row for (case-insensitive)
+
+    Raises:
+        ValueError: If the summoner can't be found in either of the table bodies
+
+    Returns:
+        BeautifulSoup: [description]
+    """
     # for each table body (1 for each team)
     for table_body in table_bodies:
         # for each row within that body (5 per body)
@@ -168,21 +197,24 @@ def get_table_row_of_summoner_from_table(
                 # found the summoner! > extract champion
                 return table_row
 
+    raise ValueError(
+        f"Could not locate summoner {league_name} in either of the table bodies!"
+    )
 
-# TODO(jonas): extract: 1) game_mode 2) champ 3) summoner_one 4) summoner_two
+
 def _extract_data_from_live_game_soup(
     soup: BeautifulSoup, league_name: str
-) -> Optional[str]:
+) -> Optional[Dict[str, str]]:
     """
-    Extracts the live champ played by scraping the opgg livegame HTML.
+    Extracts data from live-gaem played by scraping the opgg livegame HTML.
 
     Args:
         soup (BeautifulSoup): The soup of the opgg livegame endpoint response
 
     Returns:
-        Optional[str]: None, if summoner not ingame; the champ name, if ingame.
+        Optional[Dict[str, str]]: None, if summoner not ingame; the champ name, if ingame.
     """
-    logger = logging.getLogger("lol_watchbot")
+    logger = _get_internal_logger()
     # if this div exists, the summoner is not currently in a live game
     if soup.find("div", {"class": "SpectatorError"}) is not None:
         return None
@@ -197,18 +229,16 @@ def _extract_data_from_live_game_soup(
     summoner_table_row = get_table_row_of_summoner_from_table(table_bodies, league_name)
 
     # SUMMONER SPELLS
-    spells = []
     spell_container = summoner_table_row.find("td", {"class": "SummonerSpell Cell"})
+    # one cell per summoner
     spell_cells = spell_container.findAll("div", {"class": "Spell"})
-    for cell in spell_cells:
-        spells.append(cell["title"])
-    data["spells"] = spells
+    data["spells"] = [cell["title"] for cell in spell_cells]
 
     # CHAMP
     champ_cell = summoner_table_row.find("td", {"class": "ChampionImage Cell"})
     data["champion"] = champ_cell.find("a")["title"]
-    logger.info(f"\tFound data: {data}!")
 
+    logger.info(f"\tFound data: {data}!")
     return data
 
 
@@ -225,7 +255,7 @@ def get_live_game_data_played(league_name: str, server_name: str) -> Optional[st
         Optional[str]: the champion's name, if summoner is ingame; None, if not ingame
     """
     # get top-level logger
-    logger = logging.getLogger("lol_watchbot")
+    logger = _get_internal_logger()
 
     # construct url for the live game
     url = construct_url_by_name_and_server(
