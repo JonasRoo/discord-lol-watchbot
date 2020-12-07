@@ -5,7 +5,7 @@ from operator import itemgetter
 from discord import ChannelType
 import discord.enums
 
-channel_name_prios = {"alert": 1, "punish": 2, "general": -1}
+channel_name_prios = {"alert": 1, "tracking": 2, "general": -1}
 
 
 def _pick_one_text_announcement_channel(channels: Iterable[ChannelType]) -> ChannelType:
