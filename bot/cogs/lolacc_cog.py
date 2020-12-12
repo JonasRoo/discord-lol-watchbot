@@ -67,9 +67,7 @@ class LolAccCog(commands.Cog, name="LolAcc"):
             await ctx.send(
                 f"A table entry for {league_name} ({server_name}) already exists! Aborting..."
             )
-            self.bot.logger.info(
-                f"{ctx.message.author} tried adding an already existing account."
-            )
+            self.bot.logger.info(f"{ctx.message.author} tried adding an already existing account.")
             return
 
         # try to get the opgg URL of given account
@@ -78,9 +76,7 @@ class LolAccCog(commands.Cog, name="LolAcc"):
         )
         if not opgg_handler._does_url_belong_to_valid_account(url=opgg_url):
             await ctx.message.delete()
-            raise OpGGParsingError(
-                f"No valid account exists for {league_name} ({server_name})!"
-            )
+            raise OpGGParsingError(f"No valid account exists for {league_name} ({server_name})!")
         # make an embed for the confirmation message
         # (showing all params and the generated opgg URL)
         embed = embed_builder.make_account_add_confirmation_embed(
@@ -120,9 +116,7 @@ class LolAccCog(commands.Cog, name="LolAcc"):
             # Raised in 2 cases:
             # 1) if the timeout by the `wait_for` function is exceeded
             # 2) raised by `check_if_react`, if reacted with the "negative" emote.
-            self.bot.logger.info(
-                f"User {ctx.message.author} aborted adding the account"
-            )
+            self.bot.logger.info(f"User {ctx.message.author} aborted adding the account")
             await ctx.send("Alright. Did not add the account.")
         else:
             # the user reacted positively!
@@ -138,6 +132,7 @@ class LolAccCog(commands.Cog, name="LolAcc"):
             )
             with session_scope() as session:
                 session.add(new_user)
+                # TODO(jonas): load current match here (outside of task loop)?
         finally:
             # finally, delete both the invoking message and the confirmation message
             await confirmation_msg.delete()
@@ -157,12 +152,8 @@ class LolAccCog(commands.Cog, name="LolAcc"):
         all_accounts = query_utils.get_all_instances_of_something(User)
         # ..and construct a nice looking embed
         # listing all accounts, grouped by discord user
-        list_embed = embed_builder.make_list_accounts_embed(
-            accounts=all_accounts, ctx=ctx
-        )
-        list_embed.set_footer(
-            text=self.bot.user.name, icon_url=self.bot.user.avatar_url
-        )
+        list_embed = embed_builder.make_list_accounts_embed(accounts=all_accounts, ctx=ctx)
+        list_embed.set_footer(text=self.bot.user.name, icon_url=self.bot.user.avatar_url)
         await ctx.send(embed=list_embed)
 
     @commands.command(aliases=["del", "delete_user", "remove", "rm"])
@@ -181,14 +172,10 @@ class LolAccCog(commands.Cog, name="LolAcc"):
         """
         # first check whether a User instance with that ID exists
         query_options = {"id": int_id}
-        if not query_utils._check_if_something_exists(
-            model=User, options=query_options
-        ):
+        if not query_utils._check_if_something_exists(model=User, options=query_options):
             # doesn't exist > notify user
             raise BadArgumentError(f"Account of ID `{int_id}` does not exist!")
 
         # get string-version of deleted model instance, and notify user
-        msg = query_utils.delete_first_instance_by_filter(
-            model=User, options=query_options
-        )
+        msg = query_utils.delete_first_instance_by_filter(model=User, options=query_options)
         await ctx.send(f"Successfully deleted user:\n{msg}")
