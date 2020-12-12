@@ -38,28 +38,32 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
                     summoner_one=game_data["spells"][0],
                     summoner_two=game_data["spells"][1],
                 )
-                # before inserting: let's check whether our new map might be a duplicate
-                with session_scope() as session:
-                    last_match = (
-                        session.query(Match)
-                        .filter_by(user_id=account["id"])
-                        .order_by(Match.played_at.desc())
-                        .first()
-                    )
-                    # criteria to label a match as a "duplicate":
-                    # 1) the game info needs to be the same (map, champ, summoner spells)
-                    # 2) the time elapsed since that last match is smaller than the time we wait between task executions
-                    delta = datetime.utcnow() - last_match.played_at
-                    if (
-                        delta.seconds // 60 < _DEF_MINUTES_BETWEEN_MATCH_CALLS
-                        and match.has_almost_same_info(other=last_match)
-                    ):
-                        self.bot.logger.info(
-                            f"TASK:\tDid not add new match as time_passed is too little and info is the same"
-                        )
-                    else:
-                        self.bot.logger.info(f"TASK:\tAdded new match {match}")
-                        session.add(match)
+                await self._maybe_save_match(match, account["id"])
+            else:
+                self.bot.logger.info(f"No active match found for {account['league_name']}.")
+
+    async def _maybe_save_match(self, match: Match, account_id: int) -> None:
+        # before inserting: let's check whether our new match might be a duplicate
+        with session_scope() as session:
+            last_match = (
+                session.query(Match)
+                .filter_by(user_id=account_id)
+                .order_by(Match.played_at.desc())
+                .first()
+            )
+            # criteria to label a match as a "duplicate":
+            # 1) the game info needs to be the same (map, champ, summoner spells)
+            # 2) the time elapsed since that last match is smaller than the time we wait between task executions
+            # (if last_match does not exist, it's always safe to write)
+            delta = datetime.utcnow() - (last_match.played_at if last_match else datetime.min)
+            if (
+                delta.seconds // 60 < _DEF_MINUTES_BETWEEN_MATCH_CALLS
+                and match.has_almost_same_info(other=last_match)
+            ):
+                self.bot.logger.info(f"TASK:\tDid not add duplicate match")
+            else:
+                self.bot.logger.info(f"TASK:\tAdded new match {match}")
+                session.add(match)
 
     @fetch_matches.before_loop
     async def before_fetch_matches(self):
@@ -67,9 +71,7 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
         Wait for bot to join all guilds to prevent
         catch perpetrator before joining.
         """
-        self.bot.logger.info(
-            "TASK:\tWaiting for bot to be ready before fetching matches..."
-        )
+        self.bot.logger.info("TASK:\tWaiting for bot to be ready before fetching matches...")
         await self.bot.wait_until_ready()
 
     @commands.command(name="livetest")
