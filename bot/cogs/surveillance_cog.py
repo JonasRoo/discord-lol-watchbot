@@ -22,7 +22,7 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
         self.fetch_matches.cancel()
 
     @tasks.loop(minutes=_DEF_MINUTES_BETWEEN_MATCH_CALLS)
-    async def fetch_matches(self):
+    async def fetch_matches(self) -> None:
         accounts = query_utils.get_all_instances_of_something(model=User)
         # fetch possible live game data for every account we have saved
         for account in accounts:
@@ -38,7 +38,7 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
                     summoner_one=game_data["spells"][0],
                     summoner_two=game_data["spells"][1],
                 )
-                await self._maybe_save_match(match, account["id"])
+                await self._maybe_save_match(match=match, account_id=account["id"])
             else:
                 self.bot.logger.info(f"No active match found for {account['league_name']}.")
 
