@@ -11,6 +11,7 @@ channel_name_prios = {"alert": 1, "tracking": 2, "general": -1}
 def _pick_one_text_announcement_channel(channels: Iterable[ChannelType]) -> ChannelType:
     # get all the text channels
     channels = [c for c in channels if c.category == discord.enums.ChannelType.text]
+    # looks like: [(channel: ChannelType, priority: int)]
     desired_channels = []
     # iterate over all channels, and find all the channels
     # we would potentially want based on our preferences
