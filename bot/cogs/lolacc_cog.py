@@ -28,7 +28,7 @@ class LolAccCog(commands.Cog, name="LolAcc"):
     @commands.command(aliases=["add", "adduser"])
     async def add_user(
         self,
-        ctx: discord.ext.commands.Context,
+        ctx: commands.Context,
         discord_member: Optional[discord.Member] = None,
         server_name: str = "euw",
         *league_name: str,
