@@ -32,10 +32,12 @@ class WatchBot(commands.Bot):
         from bot.cogs.test_cog import TestCog
         from bot.cogs.lolacc_cog import LolAccCog
         from bot.cogs.surveillance_cog import SurveillanceCog
+        from bot.cogs.felony_cog import FelonyCog
 
         self.add_cog(TestCog(bot=self))
         self.add_cog(LolAccCog(bot=self))
         self.add_cog(SurveillanceCog(bot=self))
+        self.add_cog(FelonyCog(bot=self))
 
         self.add_listener(func=self.command_logging, name="on_command")
 
@@ -60,9 +62,7 @@ class WatchBot(commands.Bot):
                 error_message=f"Command `{ctx.invoked_with}` was not found!"
             )
         elif isinstance(error, commands.CommandInvokeError):
-            embed = make_error_message_embed(
-                error_message=f"Error invoking `{ctx.invoked_with}.`"
-            )
+            embed = make_error_message_embed(error_message=f"Error invoking `{ctx.invoked_with}.`")
         elif isinstance(error, commands.CheckFailure):
             # raised when an invoking user does not pass (permission) checks
             embed = make_error_message_embed(
@@ -83,7 +83,7 @@ class WatchBot(commands.Bot):
         else:
             # another exception that we're not handling > internal error
             embed = make_error_message_embed(
-                error_message=f"Internal error while invoking `{ctx.invoked_with}`. Please contact the administrators!"
+                error_message=f"Internal error while invoking `{ctx.invoked_with}`. Please use the `!help` command!"
             )
 
         # finally, we send the error embed and log our error

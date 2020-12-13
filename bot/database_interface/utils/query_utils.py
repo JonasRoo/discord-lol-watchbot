@@ -6,9 +6,7 @@ from bot.database_interface import bot_declarative_base
 from bot.database_interface.session.session_handler import session_scope
 
 
-def _check_if_something_exists(
-    model: bot_declarative_base, options: Dict[str, Any]
-) -> bool:
+def _check_if_something_exists(model: bot_declarative_base, options: Dict[str, Any]) -> bool:
     """
     Checks whether an instance of a model already exists for given `options`.
 
@@ -21,12 +19,12 @@ def _check_if_something_exists(
     """
     with session_scope() as session:
         # use a simple SQL `exists` query
-        return (
-            session.query(session.query(model).filter_by(**options).exists())
-        ).scalar()
+        return (session.query(session.query(model).filter_by(**options).exists())).scalar()
 
 
 def object_as_dict(obj: bot_declarative_base) -> Dict[str, Any]:
+    if obj is None:
+        return None
     return {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
 
 
@@ -61,9 +59,21 @@ def get_all_instances_of_something(
         return [dict_enums_to_values(object_as_dict(r)) for r in results]
 
 
-def delete_first_instance_by_filter(
-    model: bot_declarative_base, options: Dict[str, Any]
-) -> str:
+def get_latest_instance_of_something(
+    model: bot_declarative_base,
+    time_field: "model_field",
+    options: Optional[Dict[str, any]] = None,
+) -> Optional[Dict[str, any]]:
+    with session_scope() as session:
+        if options:
+            instance = session.query(model).filter_by(**options).order_by(-time_field).first()
+        else:
+            instance = session.query(model).order_by(-time_field).first()
+
+        return object_as_dict(obj=instance)
+
+
+def delete_first_instance_by_filter(model: bot_declarative_base, options: Dict[str, Any]) -> str:
     with session_scope() as session:
         obj = session.query(model).filter_by(**options).first()
         obj_remnant = obj.__repr__()

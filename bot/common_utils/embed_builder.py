@@ -1,22 +1,25 @@
-from bot.database_interface import bot_declarative_base
-from bot.database_interface.tables.matches import Match
 from typing import Tuple, List, Dict, Any, Optional
 import discord
 from discord.ext import commands
 
+from bot.database_interface import bot_declarative_base
+from bot.database_interface.tables.matches import Match
+from bot.database_interface.tables.felonies import Felony
+from bot.database_interface.utils import query_utils
+
 _WARNING_ICON_URL = (
     r"https://cdn.iconscout.com/icon/free/png-256/warning-notice-sign-symbol-38020.png"
 )
-_SURVEILLANCE_ICON_URL = r"https://cdn.discordapp.com/attachments/779441923773431838/780599206645334056/bruh.png"
+_SURVEILLANCE_ICON_URL = (
+    r"https://cdn.discordapp.com/attachments/779441923773431838/780599206645334056/bruh.png"
+)
 _LIST_ICON_URL = (
     r"https://everestalexander.files.wordpress.com/2015/11/moses10commandmentstrans.gif"
 )
 _POLICE_MAN_ICON_URL = r"https://purepng.com/public/uploads/large/purepng.com-policemanpolicemanhuman-securitysafetypolicecop-142152696325297fsg.png"
 
 
-def make_error_message_embed(
-    error_message: str, details: Optional[str] = None
-) -> discord.Embed:
+def make_error_message_embed(error_message: str, details: Optional[str] = None) -> discord.Embed:
     """
     Constructs an embed for errors occuring during runtime of the bot.
 
@@ -145,9 +148,7 @@ def make_list_accounts_embed(
     return embed
 
 
-def make_announcement_embed(
-    match: Match, url: str, user_id: int, ctx: commands.Context
-):
+def make_announcement_embed(match: Match, url: str, user_id: int, ctx: commands.Context):
     # check if we can grab a member of the match's discord_id in that location
     member = channel.guild.get_member(user_id)
     if member is None:
@@ -164,3 +165,48 @@ def make_announcement_embed(
         .add_field(name="S10 ABUSE CHAMPION", value=match.champion, inline=False)
         .add_field(name="LINK", value=url, inline=False)
     )
+
+
+def make_list_felonies_embed(only_active_ones: bool = True) -> discord.Embed:
+    """
+    Constructs a nicely formatted embed listing all User accounts, grouped by discord user
+
+    Args:
+        accounts (List[Dict[str, Any]]): List of User instance dicts
+        ctx (commands.Context): invoking discord context of command (to get user's names)
+
+    Returns:
+        discord.Embed: Populated embed listing all linked User accounts
+    """
+    embed = discord.Embed(
+        title=f"👮‍♂️🚔 List of all {'active' if only_active_ones else ''} felonies",
+        colour=discord.Colour.red(),
+    )
+    embed.set_thumbnail(url=_POLICE_MAN_ICON_URL)
+
+    if only_active_ones:
+        felonies = query_utils.get_all_instances_of_something(
+            model=Felony, options={"is_active": True}
+        )
+    else:
+        felonies = query_utils.get_all_instances_of_something(model=Felony)
+
+    active_felony_strings: Dict[str, List[str]] = {True: [], False: []}
+    # we divide the dateset into 2 subgroups: active and inactive felonies
+    for felony in felonies:
+        formatted = (
+            f"`{felony['id']}`\t{felony['champion'].title()} (added: {felony['date_added'].date()})"
+        )
+        # append the formatted string to the corresponding subset
+        active_felony_strings[felony["is_active"]].append(formatted)
+
+    embed.add_field(
+        name="🚨 Active felonies", value="\n".join(active_felony_strings[True]), inline=False
+    )
+    if not only_active_ones and active_felony_strings[False]:
+        # we also want to see inactive ones
+        embed.add_field(
+            name="☠ Inactive felonies", value="\n".join(active_felony_strings[False]), inline=False
+        )
+
+    return embed

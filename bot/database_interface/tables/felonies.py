@@ -1,6 +1,7 @@
 from bot.database_interface import bot_declarative_base
 
-from sqlalchemy import Column, String, DateTime
+from datetime import datetime
+from sqlalchemy import Column, Boolean, Integer, String, DateTime, UniqueConstraint
 from sqlalchemy.orm import column_property
 
 
@@ -13,6 +14,8 @@ class Felony(bot_declarative_base):
 
     id = Column(Integer, primary_key=True)
     champion = Column(String)
-    date_added = Column(DateTime)
+    date_added = Column(DateTime, default=datetime.utcnow)
     date_closed = Column(DateTime)
-    is_active = column_property(date_closed is not None)
+    is_active = Column(Boolean, default=True)
+
+    __table_args__ = (UniqueConstraint("champion", "is_active", name="only_one_active_champ_uc"),)
