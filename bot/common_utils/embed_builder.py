@@ -148,7 +148,9 @@ def make_list_accounts_embed(
     return embed
 
 
-def make_announcement_embed(match: Match, url: str, user_id: int, ctx: commands.Context):
+def make_announcement_embed(
+    match: Match, url: str, channel: discord.ChannelType, user_id: int
+) -> discord.Embed:
     # check if we can grab a member of the match's discord_id in that location
     member = channel.guild.get_member(user_id)
     if member is None:

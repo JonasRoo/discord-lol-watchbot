@@ -8,14 +8,13 @@ import discord.enums
 channel_name_prios = {"alert": 1, "tracking": 2, "general": -1}
 
 
-def _pick_one_text_announcement_channel(channels: Iterable[ChannelType]) -> ChannelType:
+def _pick_one_text_announcement_channel(guild: discord.Guild) -> ChannelType:
     # get all the text channels
-    channels = [c for c in channels if c.category == discord.enums.ChannelType.text]
     # looks like: [(channel: ChannelType, priority: int)]
     desired_channels = []
     # iterate over all channels, and find all the channels
     # we would potentially want based on our preferences
-    for channel in channels:
+    for channel in guild.text_channels:
         if channel.name in channel_name_prios.keys():
             desired_channels.append((channel, channel_name_prios[channel.name]))
 
@@ -23,5 +22,5 @@ def _pick_one_text_announcement_channel(channels: Iterable[ChannelType]) -> Chan
     if not desired_channels:
         raise ChannelNotFoundError(f"Could not find a channel for this operation.")
 
-    # pick and return channel with highest priority
-    return sorted(desired_channels, key=itemgetter(1), reverse=True)[0]
+    # pick and return channel with highest priority (items here are tuples)
+    return sorted(desired_channels, key=itemgetter(1), reverse=True)[0][0]

@@ -2,10 +2,14 @@ from bot.watchbot import WatchBot
 from bot.database_interface.session.session_handler import session_scope
 from bot.database_interface.utils import query_utils
 from bot.database_interface.tables.users import User
+from bot.database_interface.tables.felonies import Felony
 from bot.database_interface.tables.matches import Match
 from bot.common_utils.exceptions import MemberNotFoundError
+from bot.common_utils import embed_builder
+from bot.common_utils import league_utils, discord_utils
 from bot.lol_data import opgg_handler
 
+from typing import Dict, Any
 from datetime import datetime
 import discord
 from discord.ext import commands, tasks
@@ -34,20 +38,20 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
                 match = Match(
                     user_id=account["id"],
                     map=game_data["game_mode"],
-                    champion=game_data["champion"],
+                    champion=league_utils._convert_champ_name(name=game_data["champion"]),
                     summoner_one=game_data["spells"][0],
                     summoner_two=game_data["spells"][1],
                 )
-                await self._maybe_save_match(match=match, account_id=account["id"])
+                await self._maybe_save_match(match=match, account=account)
             else:
                 self.bot.logger.info(f"No active match found for {account['league_name']}.")
 
-    async def _maybe_save_match(self, match: Match, account_id: int) -> None:
+    async def _maybe_save_match(self, match: Match, account: Dict[str, Any]) -> None:
         # before inserting: let's check whether our new match might be a duplicate
         with session_scope() as session:
             last_match = (
                 session.query(Match)
-                .filter_by(user_id=account_id)
+                .filter_by(user_id=account["id"])
                 .order_by(Match.played_at.desc())
                 .first()
             )
@@ -61,9 +65,31 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
                 and match.has_almost_same_info(other=last_match)
             ):
                 self.bot.logger.info(f"TASK:\tDid not add duplicate match")
+                await self.maybe_police(match=match, account=account)
             else:
                 self.bot.logger.info(f"TASK:\tAdded new match {match}")
                 session.add(match)
+                await self.maybe_police(match=match, account=account)
+
+    async def maybe_police(self, match: Match, account: User) -> None:
+        if query_utils._check_if_something_exists(
+            model=Felony, options={"champion": match.champion}
+        ):
+            for guild in self.bot.guilds:
+                channel_to_broadcast = discord_utils._pick_one_text_announcement_channel(
+                    guild=guild
+                )
+                embed = embed_builder.make_announcement_embed(
+                    match=match,
+                    url=opgg_handler.construct_url_by_name_and_server(
+                        league_name=account["league_name"],
+                        server_name=account["server_name"],
+                        mode="spectator",
+                    ),
+                    channel=channel_to_broadcast,
+                    user_id=account["discord_id"],
+                )
+                await channel_to_broadcast.send(embed=embed)
 
     @fetch_matches.before_loop
     async def before_fetch_matches(self):

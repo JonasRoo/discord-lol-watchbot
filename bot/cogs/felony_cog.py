@@ -5,7 +5,7 @@ from bot.common_utils.exceptions import BadArgumentError
 from bot.database_interface.tables.felonies import Felony
 from bot.database_interface.utils import query_utils
 from bot.database_interface.session.session_handler import session_scope
-from bot.common_utils import embed_builder
+from bot.common_utils import embed_builder, league_utils
 
 
 class FelonyCog(commands.Cog, name="Felony"):
@@ -15,11 +15,11 @@ class FelonyCog(commands.Cog, name="Felony"):
     @commands.command(name="addfelony", aliases=["addf"])
     async def add_felony(self, ctx: commands.Context, champ_name: str) -> None:
         # TODO(jonas): refactor this into a `parsing_util` module
-        if not champ_name or not any([c.isalpha() for c in champ_name]):
+        if not league_utils.is_valid_champ_name(name=champ_name):
             # if champ_name not provided or no alphabet chars contained, it's invalid
             raise BadArgumentError("Please provide a valid champion name!")
         # cases where this matters: e.g. "Rek'Sai", "Xin Zhao"
-        parsed_name = "".join([c for c in champ_name if c.isalpha()])
+        parsed_name = league_utils._convert_champ_name(name=champ_name)
         # check if an ACTIVE entry for this champion already exists
         if query_utils._check_if_something_exists(
             model=Felony, options={"champion": parsed_name, "is_active": True}
