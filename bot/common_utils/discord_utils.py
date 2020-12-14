@@ -17,7 +17,7 @@ def _pick_one_text_announcement_channel(
 
     Args:
         guild (discord.Guild): A guild (discord "server")
-        preferences (Optional[Dict[str, int]]): Optional naming preferences (name, score). Higher score = better. Defaults to None.
+        preferences (Optional[Dict[str, int]]): Optional naming preferences {name: score}. Higher score = better. Defaults to None.
 
     Raises:
         ChannelNotFoundError: If no channel matches pre-defined preferences.
@@ -26,11 +26,9 @@ def _pick_one_text_announcement_channel(
         ChannelType: The most-preferred channel.
     """
     preferences = preferences or _channel_name_prios
-    # get all the text channels
-    # looks like: [(channel: ChannelType, priority: int)]
+    # get all the text channels, looks like: [(channel: ChannelType, priority: int)]
     desired_channels = []
-    # iterate over all channels, and find all the channels
-    # we would potentially want based on our preferences
+    # iterate over all channels, and find all the channels we would potentially want based on our preferences
     for channel in guild.text_channels:
         if channel.name in preferences.keys():
             desired_channels.append((channel, preferences[channel.name]))
