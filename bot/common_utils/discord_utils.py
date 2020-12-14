@@ -23,4 +23,4 @@ def _pick_one_text_announcement_channel(guild: discord.Guild) -> ChannelType:
         raise ChannelNotFoundError(f"Could not find a channel for this operation.")
 
     # pick and return channel with highest priority (items here are tuples)
-    return sorted(desired_channels, key=itemgetter(1), reverse=True)[0][0]
+    return min(desired_channels, key=itemgetter(1))[0]
