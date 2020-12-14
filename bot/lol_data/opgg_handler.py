@@ -241,7 +241,7 @@ def _extract_data_from_live_game_soup(
     return data
 
 
-def get_live_game_data_played(league_name: str, server_name: str) -> Optional[str]:
+def get_live_game_data_played(league_name: str, server_name: str) -> Optional[Dict[str, str]]:
     """
     Finds the currently played champion IF a given summoner is ingame;
     returns None, if he's not ingame
@@ -251,7 +251,7 @@ def get_live_game_data_played(league_name: str, server_name: str) -> Optional[st
         server_name (str): (valid) server to look for
 
     Returns:
-        Optional[str]: the champion's name, if summoner is ingame; None, if not ingame
+        Optional[Dict[str, str]]: game data (map, summoners, champ), if summoner is ingame; None, if not ingame
     """
     # get top-level logger
     logger = _get_internal_logger()
