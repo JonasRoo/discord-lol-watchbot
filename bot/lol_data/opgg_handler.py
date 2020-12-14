@@ -1,5 +1,6 @@
 from bot.common_utils.exceptions import OpGGParsingError
 from bot.database_interface.tables.users import Server
+from bot.common_utils import league_utils
 
 from typing import Tuple, Optional, Dict, Iterable
 from urllib.parse import quote_plus
@@ -233,7 +234,8 @@ def _extract_data_from_live_game_soup(
 
     # CHAMP
     champ_cell = summoner_table_row.find("td", {"class": "ChampionImage Cell"})
-    data["champion"] = champ_cell.find("a")["title"]
+    # lower case and remove non alpha-chars
+    data["champion"] = league_utils._convert_champ_name(champ_cell.find("a")["title"])
 
     logger.info(f"\tFound data: {data}!")
     return data

@@ -14,7 +14,6 @@ class FelonyCog(commands.Cog, name="Felony"):
 
     @commands.command(name="addfelony", aliases=["addf"])
     async def add_felony(self, ctx: commands.Context, champ_name: str) -> None:
-        # TODO(jonas): refactor this into a `parsing_util` module
         if not league_utils.is_valid_champ_name(name=champ_name):
             # if champ_name not provided or no alphabet chars contained, it's invalid
             raise BadArgumentError("Please provide a valid champion name!")
@@ -29,7 +28,7 @@ class FelonyCog(commands.Cog, name="Felony"):
             # no active entry exists yet > commit it to DB
             with session_scope() as session:
                 # we LOWER CASE everything
-                felony = Felony(champion=parsed_name.lower())
+                felony = Felony(champion=parsed_name)
                 session.add(felony)
             await ctx.send(f"Successfully added `{parsed_name.title()}` to the database!")
 
