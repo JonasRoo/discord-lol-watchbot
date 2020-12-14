@@ -70,25 +70,12 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
                 self.bot.logger.info(f"TASK:\tAdded new match {match}")
                 session.add(match)
 
-    async def maybe_police(self, match: Match, account: User) -> None:
+    async def maybe_police(self, match: Match, account: Dict[str, Any]) -> None:
         if query_utils._check_if_something_exists(
             model=Felony, options={"champion": match.champion}
         ):
             for guild in self.bot.guilds:
-                channel_to_broadcast = discord_utils._pick_one_text_announcement_channel(
-                    guild=guild
-                )
-                embed = embed_builder.make_announcement_embed(
-                    match=match,
-                    url=opgg_handler.construct_url_by_name_and_server(
-                        league_name=account["league_name"],
-                        server_name=account["server_name"],
-                        mode="spectator",
-                    ),
-                    channel=channel_to_broadcast,
-                    user_id=account["discord_id"],
-                )
-                await channel_to_broadcast.send(embed=embed)
+                await self.push_punish_message(guild=guild, account=account, match=match)
 
     @fetch_matches.before_loop
     async def before_fetch_matches(self):
@@ -99,21 +86,19 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
         self.bot.logger.info("TASK:\tWaiting for bot to be ready before fetching matches...")
         await self.bot.wait_until_ready()
 
-    @commands.command(name="livetest")
-    async def get_live_game_data(self, ctx):
-        matches = query_utils.get_all_instances_of_something(model=Match)
-        await ctx.send("\n".join(matches))
-
-    @commands.command(name="testchannels")
-    async def test_channels(self, ctx: commands.Context):
-        channels = [c for c in ctx.guild.channels]
-        for channel in channels:
-
-            print(channel, "\t", channel.category, type(channel.category))
-        await ctx.send(ctx.guild)
-
     async def push_punish_message(
-        embed: discord.Embed,
-        channel: discord.ChannelType,
-    ):
-        pass
+        embed: discord.Embed, guild: discord.Guild, account: Dict[str, Any], match: Match
+    ) -> None:
+        channel_to_broadcast = discord_utils._pick_one_text_announcement_channel(guild=guild)
+        opgg_url = opgg_handler.construct_url_by_name_and_server(
+            league_name=account["league_name"],
+            server_name=account["server_name"],
+            mode="spectator",
+        )
+        embed = embed_builder.make_announcement_embed(
+            match=match,
+            url=opgg_url,
+            channel=channel_to_broadcast,
+            user_id=account["discord_id"],
+        )
+        await channel_to_broadcast.send(embed=embed)
