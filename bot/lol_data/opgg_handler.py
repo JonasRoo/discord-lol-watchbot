@@ -16,6 +16,7 @@ _HTTP_STANDARD_HEADERS = {
     "accept": "application/json, text/javascript, */*; q=0.01",
 }
 
+# TODO(jonas): refactor this into enum
 _OPGG_TEMPLATES = {
     # (default) match history
     "history": "https://{server}.op.gg/summoner/userName={ign}",
@@ -158,9 +159,7 @@ def verify_summoner_on_server(league_name: str, server_name: str) -> bool:
     Returns:
         bool: True, if summoner is valid. False, if invalid.
     """
-    url = construct_url_by_name_and_server(
-        league_name=league_name, server_name=server_name
-    )
+    url = construct_url_by_name_and_server(league_name=league_name, server_name=server_name)
     return _does_url_belong_to_valid_account(url=url)
 
 
@@ -197,9 +196,7 @@ def get_table_row_of_summoner_from_table(
                 # found the summoner! > extract champion
                 return table_row
 
-    raise ValueError(
-        f"Could not locate summoner {league_name} in either of the table bodies!"
-    )
+    raise ValueError(f"Could not locate summoner {league_name} in either of the table bodies!")
 
 
 def _extract_data_from_live_game_soup(

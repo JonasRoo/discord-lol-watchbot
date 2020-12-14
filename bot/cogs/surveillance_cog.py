@@ -89,12 +89,15 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
     async def push_punish_message(
         embed: discord.Embed, guild: discord.Guild, account: Dict[str, Any], match: Match
     ) -> None:
+        # pick highest prio channel to send alert msg to
         channel_to_broadcast = discord_utils._pick_one_text_announcement_channel(guild=guild)
+        # construct the op.gg URL for live-game
         opgg_url = opgg_handler.construct_url_by_name_and_server(
             league_name=account["league_name"],
             server_name=account["server_name"],
             mode="spectator",
         )
+        # build alert embed and send it to picked channel
         embed = embed_builder.make_announcement_embed(
             match=match,
             url=opgg_url,
