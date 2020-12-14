@@ -3,6 +3,7 @@ from bot.common_utils.exceptions import ChannelNotFoundError
 from typing import Optional, Dict
 from operator import itemgetter
 from discord import ChannelType
+import discord
 
 _channel_name_prios = {"alert": 1, "tracking": 2, "general": -1}
 
