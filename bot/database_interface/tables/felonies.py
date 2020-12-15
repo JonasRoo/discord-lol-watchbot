@@ -14,8 +14,9 @@ class Felony(bot_declarative_base):
 
     id = Column(Integer, primary_key=True)
     champion = Column(String)
+    points = Column(Integer, default=1)
     date_added = Column(DateTime, default=datetime.utcnow)
     date_closed = Column(DateTime)
     is_active = Column(Boolean, default=True)
 
-    __table_args__ = (UniqueConstraint("champion", "is_active", name="only_one_active_champ_uc"),)
+    # __table_args__ = (UniqueConstraint("champion", "is_active", name="only_one_active_champ_uc"),)
