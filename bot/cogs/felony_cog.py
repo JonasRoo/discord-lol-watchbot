@@ -13,7 +13,7 @@ class FelonyCog(commands.Cog, name="Felony"):
         self.bot = bot
 
     @commands.command(name="addfelony", aliases=["addf"])
-    async def add_felony(self, ctx: commands.Context, champ_name: str) -> None:
+    async def add_felony(self, ctx: commands.Context, champ_name: str, points: int = 1) -> None:
         if not league_utils.is_valid_champ_name(name=champ_name):
             # if champ_name not provided or no alphabet chars contained, it's invalid
             raise BadArgumentError("Please provide a valid champion name!")
@@ -28,9 +28,11 @@ class FelonyCog(commands.Cog, name="Felony"):
             # no active entry exists yet > commit it to DB
             with session_scope() as session:
                 # we LOWER CASE everything
-                felony = Felony(champion=parsed_name)
+                felony = Felony(champion=parsed_name, points=points)
                 session.add(felony)
-            await ctx.send(f"Successfully added `{parsed_name.title()}` to the database!")
+            await ctx.send(
+                f"Successfully added `{parsed_name.title()}` to the database! (points: {points})"
+            )
 
     @commands.command(name="inactivatefelony", aliases=["remfel", "remf", "disfel"])
     async def inactivate_felony(self, ctx: commands.Context, id_or_name: Union[int, str]) -> None:
@@ -57,3 +59,21 @@ class FelonyCog(commands.Cog, name="Felony"):
         )
 
         await ctx.send(embed=embed)
+
+    @commands.command(name="updatefelony", aliases=["updatef"])
+    async def update_felony_points(
+        self, ctx: commands.Context, champ_name: str, new_points: int
+    ) -> None:
+        champ_name = league_utils._convert_champ_name(name=champ_name)
+        query_options = {"champion": champ_name, "is_active": True}
+        with session_scope() as session:
+            felony = session.query(Felony).filter_by(**query_options).first()
+            if felony is None:
+                await ctx.send(f"No active felony posted for {champ_name}")
+                return
+            old_points = felony.points
+            felony.points = new_points
+
+        await ctx.send(
+            f"Successfully updated points for {champ_name} from {old_points} to {new_points}!"
+        )
