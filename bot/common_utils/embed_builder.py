@@ -211,7 +211,7 @@ def make_list_felonies_embed(only_active_ones: bool = True) -> discord.Embed:
         # we also want to see inactive ones
         embed.add_field(
             name="☠ Inactive felonies",
-            value="\n".join(active_felony_strings[False] or "\u200b"),
+            value="\n".join(active_felony_strings[False]),
             inline=False,
         )
 
