@@ -43,7 +43,6 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
                     summoner_two=game_data["spells"][1],
                 )
                 await self._maybe_save_match(match=match, account=account)
-                await self.maybe_police(match=match, account=account)
             else:
                 self.bot.logger.info(f"No active match found for {account['league_name']}.")
 
@@ -68,14 +67,18 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
                 self.bot.logger.info(f"TASK:\tDid not add duplicate match")
             else:
                 self.bot.logger.info(f"TASK:\tAdded new match {match}")
+                if await self.maybe_police(match=match, account=account):
+                    match.is_abuse = True
                 session.add(match)
 
-    async def maybe_police(self, match: Match, account: Dict[str, Any]) -> None:
+    async def maybe_police(self, match: Match, account: Dict[str, Any]) -> bool:
         if query_utils._check_if_something_exists(
             model=Felony, options={"champion": match.champion}
         ):
             for guild in self.bot.guilds:
                 await self.push_punish_message(guild=guild, account=account, match=match)
+            return True
+        return False
 
     @fetch_matches.before_loop
     async def before_fetch_matches(self):
