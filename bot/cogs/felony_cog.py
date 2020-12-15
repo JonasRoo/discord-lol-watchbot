@@ -1,4 +1,5 @@
 from typing import Union
+from datetime import datetime
 from discord.ext import commands
 from bot.watchbot import WatchBot
 from bot.common_utils.exceptions import BadArgumentError
@@ -50,6 +51,7 @@ class FelonyCog(commands.Cog, name="Felony"):
             with session_scope() as session:
                 felony_object = session.query(Felony).filter_by(**felony).first()
                 felony_object.is_active = False
+                felony_object.date_closed = datetime.utcnow()
             await ctx.send(f"Successfully altered entry for {id_or_name}!")
 
     @commands.command(name="listfelonies", aliases=["listf", "allf"])
