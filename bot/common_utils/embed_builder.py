@@ -196,9 +196,12 @@ def make_list_felonies_embed(only_active_ones: bool = True) -> discord.Embed:
     active_felony_strings: Dict[str, List[str]] = {True: [], False: []}
     # we divide the dateset into 2 subgroups: active and inactive felonies
     for felony in felonies:
-        formatted = (
-            f"`{felony['id']}`\t{felony['champion'].title()} (added: {felony['date_added'].date()})"
-        )
+        formatted = f"`{felony['id']}`\t{felony['champion'].title()} [{felony['points']}pts] "
+        if felony["is_active"]:
+            dates_str = f"(added: {felony['date_added'].date()})"
+        else:
+            dates_str = f"(from {felony['date_added'].date()} to {felony['date_closed'].date()})"
+        formatted = " ".join((formatted, dates_str))
         # append the formatted string to the corresponding subset
         active_felony_strings[felony["is_active"]].append(formatted)
 
