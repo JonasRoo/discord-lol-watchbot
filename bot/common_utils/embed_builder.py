@@ -203,12 +203,16 @@ def make_list_felonies_embed(only_active_ones: bool = True) -> discord.Embed:
         active_felony_strings[felony["is_active"]].append(formatted)
 
     embed.add_field(
-        name="🚨 Active felonies", value="\n".join(active_felony_strings[True]), inline=False
+        name="🚨 Active felonies",
+        value="\n".join(active_felony_strings[True] or "\u200b"),
+        inline=False,
     )
     if not only_active_ones and active_felony_strings[False]:
         # we also want to see inactive ones
         embed.add_field(
-            name="☠ Inactive felonies", value="\n".join(active_felony_strings[False]), inline=False
+            name="☠ Inactive felonies",
+            value="\n".join(active_felony_strings[False] or "\u200b"),
+            inline=False,
         )
 
     return embed
