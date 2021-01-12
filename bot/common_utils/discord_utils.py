@@ -38,4 +38,4 @@ def _pick_one_text_announcement_channel(
         raise ChannelNotFoundError(f"Could not find a channel for this operation.")
 
     # pick and return channel with highest priority (items here are tuples)
-    return min(desired_channels, key=itemgetter(1))[0]
+    return max(desired_channels, key=itemgetter(1))[0]
