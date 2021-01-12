@@ -193,7 +193,9 @@ def make_list_felonies_embed(only_active_ones: bool = True) -> discord.Embed:
     else:
         felonies = query_utils.get_all_instances_of_something(model=Felony)
 
-    active_felony_strings: Dict[str, List[str]] = {True: [], False: []}
+    felonies = sorted(felonies, key=lambda i: i["points"], reverse=True)
+
+    active_felony_strings: Dict[bool, List[str]] = {True: [], False: []}
     # we divide the dateset into 2 subgroups: active and inactive felonies
     for felony in felonies:
         formatted = f"`{felony['id']}`\t{felony['champion'].title()} [{felony['points']}pts] "

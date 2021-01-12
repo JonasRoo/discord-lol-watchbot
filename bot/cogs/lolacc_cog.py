@@ -39,11 +39,9 @@ class LolAccCog(commands.Cog, name="LolAcc"):
         Args:
             ctx (discord.ext.commands.Context): Discord context
             discord_member (Optional[discord.Member], optional): Only usable by admins. If entered, adds the LoL account to that Discord user instead. Defaults to None.
-            league_name (str): LoL ingame name
             server_name (Optional[str]): LoL server. Defaults to "euw".
-
+            league_name (str): LoL ingame name
         """
-        # NOTE(jonas): if user has space in his league_name, that HAS to go in quotation marks
 
         if isinstance(league_name, (tuple, list)):
             # if a summoner with spaces in it is passed, this argument is a tuple.
