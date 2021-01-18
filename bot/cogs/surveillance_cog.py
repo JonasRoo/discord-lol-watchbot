@@ -14,7 +14,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands, tasks
 
-_DEF_MINUTES_BETWEEN_MATCH_CALLS = 14.0
+_DEF_MINUTES_BETWEEN_MATCH_CALLS = 30.0
 
 
 class SurveillanceCog(commands.Cog, name="Surveillance"):
