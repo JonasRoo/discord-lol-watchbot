@@ -73,7 +73,7 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
 
     async def maybe_police(self, match: Match, account: Dict[str, Any]) -> bool:
         if query_utils._check_if_something_exists(
-            model=Felony, options={"champion": match.champion}
+            model=Felony, options={"champion": match.champion, "is_active": True}
         ):
             for guild in self.bot.guilds:
                 await self.push_punish_message(guild=guild, account=account, match=match)
