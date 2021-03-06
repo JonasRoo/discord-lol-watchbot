@@ -59,11 +59,10 @@ class User(bot_declarative_base):
     opgg_link = Column(String)
     is_punished = Column(Boolean, default=False)
     matches = relationship("Match", back_populates="user", cascade="all,delete")
+    summons = relationship("Summon", back_populates="user", cascade="all,delete")
 
     # account names on a server are unique
-    __table_args__ = (
-        UniqueConstraint("league_name", "server_name", name="unique_account_uc"),
-    )
+    __table_args__ = (UniqueConstraint("league_name", "server_name", name="unique_account_uc"),)
 
     def __repr__(self):
         return f"<User(id={self.id}, discord_name=<@!{self.discord_id}>, league_name={self.league_name}, server={self.server_name})>"
