@@ -4,6 +4,7 @@ from bot.database_interface.utils import query_utils
 from bot.database_interface.tables.users import User
 from bot.database_interface.tables.felonies import Felony
 from bot.database_interface.tables.matches import Match
+from bot.database_interface.tables.summons import Summon
 from bot.common_utils.exceptions import MemberNotFoundError
 from bot.common_utils import embed_builder
 from bot.common_utils import league_utils, discord_utils
@@ -72,13 +73,22 @@ class SurveillanceCog(commands.Cog, name="Surveillance"):
                 session.add(match)
 
     async def maybe_police(self, match: Match, account: Dict[str, Any]) -> bool:
-        if query_utils._check_if_something_exists(
-            model=Felony, options={"champion": match.champion, "is_active": True}
-        ):
-            for guild in self.bot.guilds:
-                await self.push_punish_message(guild=guild, account=account, match=match)
-            return True
-        return False
+        felony = query_utils.get_latest_instance_of_something(
+            model=Felony,
+            time_field=Felony.date_added,
+            options={"champion": match.champion, "is_active": True},
+        )
+        if felony is None:
+            return False
+
+        # 1) save the committed felony in db
+        with session_scope() as session:
+            summon = Summon(user_id=match.user_id, felony_id=felony["id"], points=felony["points"])
+            session.add(summon)
+        # 2) push a warning message to all participating guilds
+        for guild in self.bot.guilds:
+            await self.push_punish_message(guild=guild, account=account, match=match)
+        return True
 
     @fetch_matches.before_loop
     async def before_fetch_matches(self):
