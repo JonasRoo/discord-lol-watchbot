@@ -33,11 +33,13 @@ class WatchBot(commands.Bot):
         from bot.cogs.lolacc_cog import LolAccCog
         from bot.cogs.surveillance_cog import SurveillanceCog
         from bot.cogs.felony_cog import FelonyCog
+        from bot.cogs.summons_cog import SummonsCog
 
         self.add_cog(TestCog(bot=self))
         self.add_cog(LolAccCog(bot=self))
         self.add_cog(SurveillanceCog(bot=self))
         self.add_cog(FelonyCog(bot=self))
+        self.add_cog(SummonsCog(bot=self))
 
         self.add_listener(func=self.command_logging, name="on_command")
 

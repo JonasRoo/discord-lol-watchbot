@@ -5,6 +5,8 @@ from discord.ext import commands
 from bot.database_interface import bot_declarative_base
 from bot.database_interface.tables.matches import Match
 from bot.database_interface.tables.felonies import Felony
+from bot.database_interface.tables.summons import Summon
+from bot.database_interface.tables.users import User
 from bot.database_interface.utils import query_utils
 
 _WARNING_ICON_URL = (
@@ -17,6 +19,7 @@ _LIST_ICON_URL = (
     r"https://everestalexander.files.wordpress.com/2015/11/moses10commandmentstrans.gif"
 )
 _POLICE_MAN_ICON_URL = r"https://purepng.com/public/uploads/large/purepng.com-policemanpolicemanhuman-securitysafetypolicecop-142152696325297fsg.png"
+_MAN_FACEPALM_ICON_URL = r"http://www.pctonline.com/fileuploads/publications/18/issues/103518/articles/images/AdobeStock_215878662_Facepalm_Portrait_a_disappointed_mature_man_fmt.png"
 
 
 def make_error_message_embed(error_message: str, details: Optional[str] = None) -> discord.Embed:
@@ -219,5 +222,66 @@ def make_list_felonies_embed(only_active_ones: bool = True) -> discord.Embed:
             value="\n".join(active_felony_strings[False]),
             inline=False,
         )
+
+    return embed
+
+
+def make_leaderboard_embed(ctx: commands.Context) -> discord.Embed:
+    embed = discord.Embed(
+        title=f"💩 Hall of shame",
+        colour=discord.Colour.red(),
+    )
+    embed.set_thumbnail(url=_MAN_FACEPALM_ICON_URL)
+    summon_entries = query_utils.get_all_instances_of_something(model=Summon)
+    user_points = {}
+    # looks like:
+    # {
+    #     1: {
+    #         "points": 5,
+    #         "count": 2,
+    #     },
+    #     2: {
+    #         "points": 14,
+    #         "count": 6,
+    #     },
+    #     [...]
+    # }
+    print(summon_entries)
+    for summon in summon_entries:
+        user_id = summon["user_id"]
+        if summon["user_id"] in user_points:
+            user_points[user_id]["points"] = user_points[user_id]["points"] + summon["points"]
+        else:
+            user_points[user_id] = {"points": summon["points"]}
+        user_points[user_id]["count"] = user_points[user_id].get("count", 0) + 1
+        if not "discord_id" in user_points[user_id]:
+            bot_user = query_utils.get_one_instance_of_model_by_id(
+                model=User, options={"id": user_id}
+            )
+            user_points[user_id]["discord_id"] = bot_user["discord_id"]
+
+    # sort by points DESC
+    print(user_points)
+    user_points = sorted(user_points.values(), key=lambda i: i["points"], reverse=True)
+    print(user_points)
+    entry_icons, default_icon = {
+        0: "🥇",
+        1: "🥈",
+        2: "🥉",
+    }, "🥳"
+
+    text_lines = []
+    for idx, stat in enumerate(user_points):
+        discord_mention = ctx.guild.get_member(stat["discord_id"])
+        formatted = (
+            f"{entry_icons.get(idx, default_icon)}\t{stat['points']}\t{discord_mention.mention}"
+        )
+        text_lines.append(formatted)
+
+    embed.add_field(
+        name="Felons",
+        value="\n".join(text_lines),
+        inline=False,
+    )
 
     return embed
