@@ -280,7 +280,7 @@ def make_leaderboard_embed(ctx: commands.Context) -> discord.Embed:
 
     embed.add_field(
         name="Felons",
-        value="\n".join(text_lines),
+        value="\n".join(text_lines) or "No summons collected yet!",
         inline=False,
     )
 
