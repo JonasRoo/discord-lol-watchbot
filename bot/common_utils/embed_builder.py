@@ -246,7 +246,7 @@ def make_leaderboard_embed(ctx: commands.Context) -> discord.Embed:
     #     },
     #     [...]
     # }
-    print(summon_entries)
+
     for summon in summon_entries:
         user_id = summon["user_id"]
         if summon["user_id"] in user_points:
@@ -261,9 +261,7 @@ def make_leaderboard_embed(ctx: commands.Context) -> discord.Embed:
             user_points[user_id]["discord_id"] = bot_user["discord_id"]
 
     # sort by points DESC
-    print(user_points)
     user_points = sorted(user_points.values(), key=lambda i: i["points"], reverse=True)
-    print(user_points)
     entry_icons, default_icon = {
         0: "🥇",
         1: "🥈",
