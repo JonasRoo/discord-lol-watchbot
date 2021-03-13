@@ -22,6 +22,13 @@ def _check_if_something_exists(model: bot_declarative_base, options: Dict[str, A
         return (session.query(session.query(model).filter_by(**options).exists())).scalar()
 
 
+def get_one_instance_of_model_by_id(
+    model: bot_declarative_base, options: Dict[str, Any]
+) -> Dict[str, any]:
+    with session_scope() as session:
+        return object_as_dict(session.query(model).filter_by(**options).first())
+
+
 def object_as_dict(obj: bot_declarative_base) -> Dict[str, Any]:
     if obj is None:
         return None
